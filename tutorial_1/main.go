@@ -3,7 +3,9 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -43,11 +45,157 @@ func canMakeIt(e engine, miles uint8) {
 // }
 
 func main() {
-	//conditionalBlocks()
-	//collections()
-	//memoryAllocationSpeedTest()
-	//stringsInGo()
+	conditionalBlocks()
+	collections()
+	memoryAllocationSpeedTest()
+	stringsInGo()
 	structs()
+	pointers()
+	routines()
+	channels()
+	generics()
+}
+
+func generics() {
+	var intSlice = []int{1, 2, 3}
+	fmt.Println(sumSlice[int](intSlice))
+	fmt.Println(isEmpty(intSlice))
+
+	var float32Slice = []float32{1, 2, 3}
+	fmt.Println(sumSlice[float32](float32Slice))
+	fmt.Println(isEmpty(float32Slice))
+}
+
+func isEmpty[T any](slice []T) bool {
+	return len(slice) == 0
+}
+
+func sumSlice[T int | float32 | float64](slice []T) T {
+	var sum T
+	for _, v := range slice {
+		sum += v
+	}
+	return sum
+}
+
+var MAX_CHICKEN_PRICE float32 = 5
+var MAX_TOFU_PRICE float32 = 3
+
+func channels() {
+	// var c = make(chan int)
+	// go process(c)
+	// for i := range c {
+	// 	fmt.Println(i)
+	// }
+	var chickenChannel = make(chan string)
+	var tofuChannel = make(chan string)
+	var websites = []string{"walmart.com", "costco.com", "wholefoods.com"}
+	for i := range websites {
+		go checkChickenPrices(websites[i], chickenChannel)
+		go checkTofuPrices(websites[i], tofuChannel)
+	}
+	sendMessage(chickenChannel, tofuChannel)
+}
+
+func checkTofuPrices(website string, tofuChannel chan string) {
+	for {
+		time.Sleep(time.Second * 1)
+		var tofuPrice = rand.Float32() * 20
+		if tofuPrice <= MAX_TOFU_PRICE {
+			tofuChannel <- website
+			break
+		}
+	}
+}
+
+func checkChickenPrices(website string, chickenChannel chan string) {
+	for {
+		time.Sleep(time.Second * 1)
+		var chickenPrice = rand.Float32() * 20
+		if chickenPrice <= MAX_CHICKEN_PRICE {
+			chickenChannel <- website
+			break
+		}
+	}
+}
+
+func sendMessage(chickenChannel chan string, tofuChannel chan string) {
+	select {
+	case website := <-chickenChannel:
+		fmt.Printf("\nFound a deal on chicken at %v", website)
+	case website := <-tofuChannel:
+		fmt.Printf("\nFound a deal on tofu at %v", website)
+	}
+}
+
+func process(c chan int) {
+	defer close(c)
+	for i := 0; i < 5; i++ {
+		c <- i
+	}
+}
+
+// var m = sync.Mutex{}
+var m = sync.RWMutex{}
+var wg = sync.WaitGroup{}
+var dbData = []string{"id1", "id2", "id3", "id4", "id5"}
+var results = []string{}
+
+func routines() {
+	t0 := time.Now()
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		//go dbCall(i)
+		go count()
+	}
+	wg.Wait()
+	fmt.Printf("\ntotal execution time: %v", time.Since(t0))
+	//fmt.Printf("\nThe results are %v", results)
+}
+
+func count() {
+	var res int
+	for i := 0; i < 100000000; i++ {
+		res++
+	}
+	wg.Done()
+}
+
+func dbCall(i int) {
+
+	//var delay float32 = rand.Float32() * 2000
+	var delay float32 = 2000
+	time.Sleep(time.Duration(delay) * time.Millisecond)
+	//fmt.Println("\nThe result from the database is:", dbData[i])
+	//save(dbData[i])
+	//log()
+	wg.Done()
+}
+
+func save(result string) {
+	m.Lock()
+	results = append(results, result)
+	m.Unlock()
+}
+
+func log() {
+	m.RLock()
+	fmt.Printf("\nthe current results are: %v", results)
+	m.RUnlock()
+}
+
+func pointers() {
+	var p *int32 = new(int32)
+	var i int32
+	*p = 10
+
+	fmt.Printf("The value p points to is: %v", *p)
+	fmt.Printf("\nThe value if i is: %v", i)
+	p = &i
+	*p = 1
+	fmt.Printf("\nThe value p points to is: %v", *p)
+	fmt.Printf("\nThe value if i is: %v", i)
+
 }
 
 func structs() {
